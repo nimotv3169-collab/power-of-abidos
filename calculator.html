@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lost Ark Abidos Fusion Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Neon glow effect */
+    .glow-input:focus {
+      outline: none;
+      box-shadow: 0 0 10px #3b82f6, 0 0 20px #2563eb;
+      border-color: #3b82f6;
+    }
+    .glow-btn {
+      transition: all 0.3s ease;
+    }
+    .glow-btn:hover {
+      box-shadow: 0 0 10px #3b82f6, 0 0 20px #2563eb;
+    }
+    /* Style for the initial, empty Results Card */
+    .results-placeholder {
+      position: relative;
+      background-color: rgba(31, 41, 55, 0.7);
+      pointer-events: none;
+      user-select: none;
+      opacity: 0.6;
+      transition: opacity 0.5s ease;
+    }
+    /* Style for the active Results Card */
+    .results-active {
+      background-color: #1f2937;
+      pointer-events: auto;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col items-center p-6">
+
+  <header class="w-full text-center mb-6">
+    <h1 class="text-3xl font-bold text-white">Abidos Fusion Calculator</h1>
+    <p class="text-gray-400">Select your profession and calculate fusion results</p>
+  </header>
+
+  <div class="mb-6">
+    <select id="profession" class="px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-gray-100 shadow-sm glow-input">
+      <option value="Logging" selected>Logging</option>
+      <option value="Mining">Mining</option>
+      <option value="Foraging">Foraging</option>
+      <option value="Hunting">Hunting</option>
+      <option value="Fishing">Fishing</option>
+      <option value="Excavating">Excavating</option>
+    </select>
+  </div>
+
+  <div class="w-full max-w-5xl flex flex-col lg:flex-row lg:space-x-6 space-y-6 lg:space-y-0">
+    
+    <div class="bg-gray-800 shadow-lg rounded-lg p-6 w-full lg:w-1/2">
+      <h2 class="text-xl font-semibold text-white mb-4">Input your materials</h2>
+      <form id="fusionForm" class="space-y-4">
+        <div>
+          <label class="block text-gray-300" id="label1">Timber</label>
+          <input type="text" id="input1" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
+        </div>
+        <div>
+          <label class="block text-gray-300" id="label2">Logging Powder</label>
+          <input type="text" id="input2" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
+        </div>
+        <div>
+          <label class="block text-gray-300" id="label3">Tender Timber</label>
+          <input type="text" id="input3" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
+        </div>
+        <div id="sturdyWrapper">
+          <label class="block text-gray-300" id="label4">Sturdy Timber</label>
+          <input type="text" id="input4" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
+        </div>
+        <div>
+          <label class="block text-gray-300" id="label5">Abidos Timber</label>
+          <input type="text" id="input5" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
+        </div>
+
+        <button type="button" id="calculateBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg glow-btn">Calculate</button>
+      </form>
+    </div>
+
+    <div id="resultsCard" class="shadow-lg rounded-lg p-6 w-full lg:w-1/2 results-placeholder">
+      <h2 class="text-xl font-semibold text-white mb-4">Results</h2>
+      <p id="initial-results-message" class="text-gray-500 text-center py-10">
+        Enter your materials and click Calculate to see the fusion results.
+      </p>
+      <pre id="results" class="text-gray-300 whitespace-pre-wrap hidden relative font-mono"></pre>
+    </div>
+
+  </div>
+  
+  <script>
+    // **STRICT KEYPRESS VALIDATION**
+    // Blocks non-numeric characters before they appear in the field, which is the most reliable method.
+    document.querySelectorAll('.only-digits').forEach(input => {
+        
+        // 1. Block keys on press
+        input.addEventListener('keypress', function(e) {
+            // Allow digits (0-9)
+            if (e.key >= '0' && e.key <= '9') {
+                return true; 
+            }
+            // Block everything else, including letters, symbols, and spaces
+            e.preventDefault();
+        });
+
+        // 2. Cleanup after paste/autofill (as a final safeguard)
+        input.addEventListener('input', function() {
+            // Strip any non-digit characters that might slip through (e.g., from a paste operation)
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    });
+
+    // Profession word mappings
+    const mappings = {
+      Foraging: { timber: "Wild Flower", powder: "Gathering Powder", tender: "Shy Wild Flower", sturdy: null, abidos: "Abidos Wild Flower" },
+      Logging: { timber: "Timber", powder: "Logging Powder", tender: "Tender Timber", sturdy: "Sturdy Timber", abidos: "Abidos Timber" },
+      Mining: { timber: "Iron Ore", powder: "Mining Powder", tender: "Heavy Iron Ore", sturdy: "Strong Iron Ore", abidos: "Abidos Iron Ore" },
+      Hunting: { timber: "Thick Raw Meat", powder: "Hunting Powder", tender: "Treated Meat", sturdy: null, abidos: "Abidos Thick Raw Meat" },
+      Fishing: { timber: "Fish", powder: "Fishing Powder", tender: "Redflesh Fish", sturdy: null, abidos: "Abidos Solar Carp" },
+      Excavating: { timber: "Ancient Relic", powder: "Excavating Powder", tender: "Rare Relic", sturdy: null, abidos: "Abidos Relic" }
+    };
+
+    const professionSelect = document.getElementById("profession");
+    const sturdyWrapper = document.getElementById("sturdyWrapper");
+    const resultsCard = document.getElementById("resultsCard");
+    const resultsPre = document.getElementById("results");
+    const initialMessage = document.getElementById("initial-results-message");
+
+    const labels = {
+      1: document.getElementById("label1"),
+      2: document.getElementById("label2"),
+      3: document.getElementById("label3"),
+      4: document.getElementById("label4"),
+      5: document.getElementById("label5")
+    };
+
+    function updateLabels() {
+      const prof = professionSelect.value;
+      const map = mappings[prof];
+      labels[1].innerText = map.timber;
+      labels[2].innerText = map.powder;
+      labels[3].innerText = map.tender;
+      labels[5].innerText = map.abidos;
+      if (map.sturdy) {
+        sturdyWrapper.classList.remove("hidden");
+        labels[4].innerText = map.sturdy;
+      } else {
+        sturdyWrapper.classList.add("hidden");
+      }
+    }
+
+    updateLabels();
+    professionSelect.addEventListener("change", updateLabels);
+
+    // Fusion logic
+    document.getElementById("calculateBtn").addEventListener("click", () => {
+      const prof = professionSelect.value;
+      const map = mappings[prof];
+
+      // Get values, parse as integer, default to 0 if empty
+      // Note: Since we enforce digits only, the parsing here is safe.
+      let timber = parseInt(document.getElementById("input1").value) || 0;
+      let powder_count = parseInt(document.getElementById("input2").value) || 0; 
+      let tender_timber = parseInt(document.getElementById("input3").value) || 0;
+      let sturdy_timber = map.sturdy ? (parseInt(document.getElementById("input4").value) || 0) : 0; 
+      let abidos_timber = parseInt(document.getElementById("input5").value) || 0; 
+
+      let fusion_material = 0;
+
+      let sturdy_to_timber_times = 0;
+      let timber_to_powder_times = 0;
+      let tender_to_powder_times = 0;
+      let powder_to_timber_times = 0;
+      let powder_to_tender_times = 0;
+      let powder_to_abidos_times = 0;
+
+      let cycles = 0;
+
+      function fusion_possible(a, te, ti) { return a >= 33 && te >= 45 && ti >= 86; }
+      function missing_for_fusion(a, te, ti) {
+        let need = [];
+        if (a < 33) need.push("abidos");
+        if (te < 45) need.push("tender");
+        if (ti < 86) need.push("timber");
+        return need;
+      }
+
+      // 1. Sturdy to Timber Conversion (Prioritized)
+      while (sturdy_timber >= 5) {
+        sturdy_timber -= 5;
+        timber += 50;
+        sturdy_to_timber_times += 1;
+      }
+
+      let changed = true;
+      while (changed) {
+        changed = false;
+        cycles += 1;
+        
+        // 2. Fusion
+        while (fusion_possible(abidos_timber, tender_timber, timber)) {
+          abidos_timber -= 33;
+          tender_timber -= 45;
+          timber -= 86;
+          fusion_material += 10;
+          changed = true;
+        }
+        
+        let shortage = missing_for_fusion(abidos_timber, tender_timber, timber);
+        if (!shortage.length) break;
+
+        // 3. Powder Conversion -> Missing Material
+        if (powder_count >= 100) { 
+          if (shortage.includes("abidos")) { powder_count -= 100; abidos_timber += 10; powder_to_abidos_times += 1; changed = true; continue; }
+          if (shortage.includes("tender")) { powder_count -= 100; tender_timber += 50; powder_to_tender_times += 1; changed = true; continue; }
+          if (shortage.includes("timber")) { powder_count -= 100; timber += 50; powder_to_timber_times += 1; changed = true; continue; }
+        }
+        
+        // 4. Raw Material Conversion -> Powder
+        if (tender_timber >= 50 || timber >= 100) {
+          if (timber >= tender_timber * 2 && timber >= 100) {
+            timber -= 100; powder_count += 80; timber_to_powder_times += 1; changed = true; continue;
+          } else if (tender_timber >= 50) {
+            tender_timber -= 50; powder_count += 80; tender_to_powder_times += 1; changed = true; continue;
+          }
+        }
+      }
+
+      // BEGIN OUTPUT CONSTRUCTION
+      const colorize = (text) => `<span class="text-green-400">${text}</span>`;
+      const bold = (text) => `<strong>${text}</strong>`;
+      let output = "";
+
+      // Fusion Result
+      output += `After conversion, you can craft:\n`;
+      output += `${bold(colorize(fusion_material + "x Abidos Fusion Material"))}\n\n`;
+      
+      // CONVERSION BREAKDOWN
+      output += `${bold("Material Conversions:")}\n`;
+      if (sturdy_to_timber_times > 0 && map.sturdy) {
+        output += `Use ${sturdy_to_timber_times * 5} ${map.sturdy} to get ${bold(colorize(sturdy_to_timber_times * 50 + " " + map.timber))}\n`;
+      }
+      if (timber_to_powder_times > 0) {
+        output += `Use ${timber_to_powder_times * 100} ${map.timber} to get ${bold(colorize(timber_to_powder_times * 80 + " " + map.powder))}\n`;
+      }
+      if (tender_to_powder_times > 0) {
+        output += `Use ${tender_to_powder_times * 50} ${map.tender} to get ${bold(colorize(tender_to_powder_times * 80 + " " + map.powder))}\n`;
+      }
+      output += `\n${bold("Powder Conversions:")}\n`;
+      if (powder_to_abidos_times > 0) {
+        output += `Use ${powder_to_abidos_times * 100} ${map.powder} to get ${bold(colorize(powder_to_abidos_times * 10 + " " + map.abidos))}\n`;
+      }
+      if (powder_to_tender_times > 0) {
+        output += `Use ${powder_to_tender_times * 100} ${map.powder} to get ${bold(colorize(powder_to_tender_times * 50 + " " + map.tender))}\n`;
+      }
+      if (powder_to_timber_times > 0) {
+        output += `Use ${powder_to_timber_times * 100} ${map.powder} to get ${bold(colorize(powder_to_timber_times * 50 + " " + map.timber))}\n`;
+      }
+      // END OUTPUT CONSTRUCTION
+
+      // Set results and activate card
+      resultsPre.innerHTML = output; 
+      resultsPre.classList.remove("hidden");
+      initialMessage.classList.add("hidden");
+      resultsCard.classList.remove("results-placeholder");
+      resultsCard.classList.add("results-active");
+    });
+  </script>
+</body>
+</html>
