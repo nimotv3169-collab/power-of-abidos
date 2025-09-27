@@ -38,8 +38,8 @@
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col items-center p-6">
 
   <header class="w-full text-center mb-6">
-    <h1 class="text-3xl font-bold text-white">Abidos Fusion Calculator</h1>
-    <p class="text-gray-400">by Excoupe</p>
+    <h1 class="text-3xl font-bold text-white select-none">Abidos Fusion Calculator</h1>
+    <p class="text-gray-400 select-none">by Excoupe</p>
   </header>
 
   <div class="mb-6">
@@ -182,13 +182,19 @@
       let cycles = 0;
       
       // Conversion constants
-      const TENDER_TO_POWDER_COST = 50;
-      const TIMBER_TO_POWDER_COST = 100;
       const POWDER_PER_RAW_MATERIAL = 80;
+      
+      // RAW MATERIAL TO POWDER RATES
+      const TENDER_TO_POWDER_COST = 50;  // 50 Tender -> 80 Powder
+      const TIMBER_TO_POWDER_COST = 100; // 100 Timber -> 80 Powder
+      
+      // FUSION RATES
       const FUSION_TIMBER_COST = 86;
       const FUSION_TENDER_COST = 45;
       const FUSION_ABIDOS_COST = 33;
       const FUSION_MATERIAL_YIELD = 10;
+      
+      // POWDER TO MATERIAL RATES
       const POWDER_TO_ABIDOS_COST = 100;
       const ABIDOS_PER_POWDER_CONVERSION = 10;
       const POWDER_TO_TENDER_COST = 100;
@@ -206,7 +212,7 @@
         return need;
       }
 
-      // 1. Sturdy to Timber Conversion (Prioritized)
+      // 1. Sturdy to Timber Conversion (Always done first)
       while (sturdy_timber >= 5) {
         sturdy_timber -= 5;
         timber += 50;
@@ -218,7 +224,7 @@
         changed = false;
         cycles += 1;
         
-        // 2. Fusion
+        // 2. Fusion (Highest priority)
         while (fusion_possible(abidos_timber, tender_timber, timber)) {
           abidos_timber -= FUSION_ABIDOS_COST;
           tender_timber -= FUSION_TENDER_COST;
@@ -230,23 +236,23 @@
         let shortage = missing_for_fusion(abidos_timber, tender_timber, timber);
         if (!shortage.length) break; 
 
-        // 3. Powder Conversion -> Missing Material 
+        // 3. Powder Conversion -> Missing Material (Spend Powder to enable fusion)
         if (powder_count >= POWDER_TO_ABIDOS_COST) { 
-          // Prioritize Abidos conversion as it is the rarest material
+          // Prioritize Abidos conversion
           if (shortage.includes("abidos")) { powder_count -= POWDER_TO_ABIDOS_COST; abidos_timber += ABIDOS_PER_POWDER_CONVERSION; powder_to_abidos_times += 1; changed = true; continue; }
-          // Then Tender Timber (mid-tier)
+          // Then Tender Timber
           if (shortage.includes("tender")) { powder_count -= POWDER_TO_TENDER_COST; tender_timber += TENDER_PER_POWDER_CONVERSION; powder_to_tender_times += 1; changed = true; continue; }
-          // Then Timber (lowest tier)
+          // Then Timber
           if (shortage.includes("timber")) { powder_count -= POWDER_TO_TIMBER_COST; timber += TIMBER_PER_POWDER_CONVERSION; powder_to_timber_times += 1; changed = true; continue; }
         }
         
-        // 4. Raw Material Conversion -> Powder (Strictly prioritized to match the reference output)
+        // 4. Raw Material Conversion -> Powder (ONLY if needed to replenish powder stock, prioritizing Timber)
         if (tender_timber >= TENDER_TO_POWDER_COST || timber >= TIMBER_TO_POWDER_COST) {
-          // 4a. Prioritize converting Timber (100 -> 80)
+          // 4a. Prioritize converting Timber (100 cost)
           if (timber >= TIMBER_TO_POWDER_COST) {
             timber -= TIMBER_TO_POWDER_COST; powder_count += POWDER_PER_RAW_MATERIAL; timber_to_powder_times += 1; changed = true; continue;
           } 
-          // 4b. Fallback to converting Tender Timber (50 -> 80)
+          // 4b. Fallback to converting Tender Timber (50 cost)
           else if (tender_timber >= TENDER_TO_POWDER_COST) {
             tender_timber -= TENDER_TO_POWDER_COST; powder_count += POWDER_PER_RAW_MATERIAL; tender_to_powder_times += 1; changed = true; continue;
           }
@@ -299,4 +305,3 @@
   </script>
 </body>
 </html>
-
