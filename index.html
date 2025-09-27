@@ -39,7 +39,7 @@
 
   <header class="w-full text-center mb-6">
     <h1 class="text-3xl font-bold text-white">Abidos Fusion Calculator</h1>
-    <p class="text-gray-400">by Excoupe</p>
+    <p class="text-gray-400">Select your profession and calculate fusion results</p>
   </header>
 
   <div class="mb-6">
@@ -79,7 +79,10 @@
           <input type="text" id="input5" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
         </div>
 
-        <button type="button" id="calculateBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg glow-btn">Calculate</button>
+        <button type="button" id="calculateBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg glow-btn">
+            Calculate
+        </button>
+
       </form>
     </div>
 
@@ -95,22 +98,20 @@
   
   <script>
     // **STRICT KEYPRESS VALIDATION**
-    // Blocks non-numeric characters before they appear in the field, which is the most reliable method.
     document.querySelectorAll('.only-digits').forEach(input => {
         
-        // 1. Block keys on press
         input.addEventListener('keypress', function(e) {
-            // Allow digits (0-9)
             if (e.key >= '0' && e.key <= '9') {
                 return true; 
             }
-            // Block everything else, including letters, symbols, and spaces
+            if (e.keyCode === 8 || e.keyCode === 9 || e.keyCode === 13 || e.keyCode === 37 || e.keyCode === 39) {
+                return true;
+            }
             e.preventDefault();
         });
 
-        // 2. Cleanup after paste/autofill (as a final safeguard)
+        // Cleanup after paste/autofill (Final safeguard)
         input.addEventListener('input', function() {
-            // Strip any non-digit characters that might slip through (e.g., from a paste operation)
             this.value = this.value.replace(/[^0-9]/g, '');
         });
     });
@@ -163,7 +164,6 @@
       const map = mappings[prof];
 
       // Get values, parse as integer, default to 0 if empty
-      // Note: Since we enforce digits only, the parsing here is safe.
       let timber = parseInt(document.getElementById("input1").value) || 0;
       let powder_count = parseInt(document.getElementById("input2").value) || 0; 
       let tender_timber = parseInt(document.getElementById("input3").value) || 0;
@@ -180,13 +180,29 @@
       let powder_to_abidos_times = 0;
 
       let cycles = 0;
+      
+      // Conversion constants
+      const TENDER_TO_POWDER_COST = 50;
+      const TIMBER_TO_POWDER_COST = 100;
+      const POWDER_PER_RAW_MATERIAL = 80;
+      const FUSION_TIMBER_COST = 86;
+      const FUSION_TENDER_COST = 45;
+      const FUSION_ABIDOS_COST = 33;
+      const FUSION_MATERIAL_YIELD = 10;
+      const POWDER_TO_ABIDOS_COST = 100;
+      const ABIDOS_PER_POWDER_CONVERSION = 10;
+      const POWDER_TO_TENDER_COST = 100;
+      const TENDER_PER_POWDER_CONVERSION = 50;
+      const POWDER_TO_TIMBER_COST = 100;
+      const TIMBER_PER_POWDER_CONVERSION = 50;
 
-      function fusion_possible(a, te, ti) { return a >= 33 && te >= 45 && ti >= 86; }
+
+      function fusion_possible(a, te, ti) { return a >= FUSION_ABIDOS_COST && te >= FUSION_TENDER_COST && ti >= FUSION_TIMBER_COST; }
       function missing_for_fusion(a, te, ti) {
         let need = [];
-        if (a < 33) need.push("abidos");
-        if (te < 45) need.push("tender");
-        if (ti < 86) need.push("timber");
+        if (a < FUSION_ABIDOS_COST) need.push("abidos");
+        if (te < FUSION_TENDER_COST) need.push("tender");
+        if (ti < FUSION_TIMBER_COST) need.push("timber");
         return need;
       }
 
@@ -204,31 +220,40 @@
         
         // 2. Fusion
         while (fusion_possible(abidos_timber, tender_timber, timber)) {
-          abidos_timber -= 33;
-          tender_timber -= 45;
-          timber -= 86;
-          fusion_material += 10;
+          abidos_timber -= FUSION_ABIDOS_COST;
+          tender_timber -= FUSION_TENDER_COST;
+          timber -= FUSION_TIMBER_COST;
+          fusion_material += FUSION_MATERIAL_YIELD;
           changed = true;
         }
         
         let shortage = missing_for_fusion(abidos_timber, tender_timber, timber);
-        if (!shortage.length) break;
+        if (!shortage.length) break; 
 
-        // 3. Powder Conversion -> Missing Material
-        if (powder_count >= 100) { 
-          if (shortage.includes("abidos")) { powder_count -= 100; abidos_timber += 10; powder_to_abidos_times += 1; changed = true; continue; }
-          if (shortage.includes("tender")) { powder_count -= 100; tender_timber += 50; powder_to_tender_times += 1; changed = true; continue; }
-          if (shortage.includes("timber")) { powder_count -= 100; timber += 50; powder_to_timber_times += 1; changed = true; continue; }
+        // 3. Powder Conversion -> Missing Material 
+        if (powder_count >= POWDER_TO_ABIDOS_COST) { 
+          // Prioritize Abidos conversion as it is the rarest material
+          if (shortage.includes("abidos")) { powder_count -= POWDER_TO_ABIDOS_COST; abidos_timber += ABIDOS_PER_POWDER_CONVERSION; powder_to_abidos_times += 1; changed = true; continue; }
+          // Then Tender Timber (mid-tier)
+          if (shortage.includes("tender")) { powder_count -= POWDER_TO_TENDER_COST; tender_timber += TENDER_PER_POWDER_CONVERSION; powder_to_tender_times += 1; changed = true; continue; }
+          // Then Timber (lowest tier)
+          if (shortage.includes("timber")) { powder_count -= POWDER_TO_TIMBER_COST; timber += TIMBER_PER_POWDER_CONVERSION; powder_to_timber_times += 1; changed = true; continue; }
         }
         
-        // 4. Raw Material Conversion -> Powder
-        if (tender_timber >= 50 || timber >= 100) {
-          if (timber >= tender_timber * 2 && timber >= 100) {
-            timber -= 100; powder_count += 80; timber_to_powder_times += 1; changed = true; continue;
-          } else if (tender_timber >= 50) {
-            tender_timber -= 50; powder_count += 80; tender_to_powder_times += 1; changed = true; continue;
+        // 4. Raw Material Conversion -> Powder (Strictly prioritized to match the reference output)
+        if (tender_timber >= TENDER_TO_POWDER_COST || timber >= TIMBER_TO_POWDER_COST) {
+          // 4a. Prioritize converting Timber (100 -> 80)
+          if (timber >= TIMBER_TO_POWDER_COST) {
+            timber -= TIMBER_TO_POWDER_COST; powder_count += POWDER_PER_RAW_MATERIAL; timber_to_powder_times += 1; changed = true; continue;
+          } 
+          // 4b. Fallback to converting Tender Timber (50 -> 80)
+          else if (tender_timber >= TENDER_TO_POWDER_COST) {
+            tender_timber -= TENDER_TO_POWDER_COST; powder_count += POWDER_PER_RAW_MATERIAL; tender_to_powder_times += 1; changed = true; continue;
           }
         }
+        
+        // If we reach here, we are fully stuck. Stop the loop.
+        break; 
       }
 
       // BEGIN OUTPUT CONSTRUCTION
@@ -246,20 +271,21 @@
         output += `Use ${sturdy_to_timber_times * 5} ${map.sturdy} to get ${bold(colorize(sturdy_to_timber_times * 50 + " " + map.timber))}\n`;
       }
       if (timber_to_powder_times > 0) {
-        output += `Use ${timber_to_powder_times * 100} ${map.timber} to get ${bold(colorize(timber_to_powder_times * 80 + " " + map.powder))}\n`;
+        output += `Use ${timber_to_powder_times * TIMBER_TO_POWDER_COST} ${map.timber} to get ${bold(colorize(timber_to_powder_times * POWDER_PER_RAW_MATERIAL + " " + map.powder))}\n`;
       }
       if (tender_to_powder_times > 0) {
-        output += `Use ${tender_to_powder_times * 50} ${map.tender} to get ${bold(colorize(tender_to_powder_times * 80 + " " + map.powder))}\n`;
+        output += `Use ${tender_to_powder_times * TENDER_TO_POWDER_COST} ${map.tender} to get ${bold(colorize(tender_to_powder_times * POWDER_PER_RAW_MATERIAL + " " + map.powder))}\n`;
       }
+      
       output += `\n${bold("Powder Conversions:")}\n`;
       if (powder_to_abidos_times > 0) {
-        output += `Use ${powder_to_abidos_times * 100} ${map.powder} to get ${bold(colorize(powder_to_abidos_times * 10 + " " + map.abidos))}\n`;
+        output += `Use ${powder_to_abidos_times * POWDER_TO_ABIDOS_COST} ${map.powder} to get ${bold(colorize(powder_to_abidos_times * ABIDOS_PER_POWDER_CONVERSION + " " + map.abidos))}\n`;
       }
       if (powder_to_tender_times > 0) {
-        output += `Use ${powder_to_tender_times * 100} ${map.powder} to get ${bold(colorize(powder_to_tender_times * 50 + " " + map.tender))}\n`;
+        output += `Use ${powder_to_tender_times * POWDER_TO_TENDER_COST} ${map.powder} to get ${bold(colorize(powder_to_tender_times * TENDER_PER_POWDER_CONVERSION + " " + map.tender))}\n`;
       }
       if (powder_to_timber_times > 0) {
-        output += `Use ${powder_to_timber_times * 100} ${map.powder} to get ${bold(colorize(powder_to_timber_times * 50 + " " + map.timber))}\n`;
+        output += `Use ${powder_to_timber_times * POWDER_TO_TIMBER_COST} ${map.powder} to get ${bold(colorize(powder_to_timber_times * TIMBER_PER_POWDER_CONVERSION + " " + map.timber))}\n`;
       }
       // END OUTPUT CONSTRUCTION
 
@@ -272,5 +298,4 @@
     });
   </script>
 </body>
-
 </html>
