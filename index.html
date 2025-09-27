@@ -1,307 +1,389 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lost Ark Abidos Fusion Calculator</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Neon glow effect */
-    .glow-input:focus {
-      outline: none;
-      box-shadow: 0 0 10px #3b82f6, 0 0 20px #2563eb;
-      border-color: #3b82f6;
-    }
-    .glow-btn {
-      transition: all 0.3s ease;
-    }
-    .glow-btn:hover {
-      box-shadow: 0 0 10px #3b82f6, 0 0 20px #2563eb;
-    }
-    /* Style for the initial, empty Results Card */
-    .results-placeholder {
-      position: relative;
-      background-color: rgba(31, 41, 55, 0.7);
-      pointer-events: none;
-      user-select: none;
-      opacity: 0.6;
-      transition: opacity 0.5s ease;
-    }
-    /* Style for the active Results Card */
-    .results-active {
-      background-color: #1f2937;
-      pointer-events: auto;
-      opacity: 1;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fusion Resource Calculator</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the app container */
+        .card-shadow {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        /* Custom size for the main title (30px + 2px = 32px) */
+        .text-32 {
+            font-size: 32px;
+        }
+        /* Custom font and Global Text Selection Disable */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdfa; /* Light mode default */
+            transition: background-color 0.3s;
+            /* Disable text selection globally */
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        /* Dark mode body background */
+        .dark body {
+            background-color: #111827; /* Dark Gray */
+        }
+        /* Hide number input arrows for a cleaner look */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        /* Allow selection for input fields only, overriding the body rule */
+        input {
+            -webkit-user-select: auto !important;
+            -moz-user-select: auto !important;
+            -ms-user-select: auto !important;
+            user-select: auto !important;
+        }
+    </style>
+    <script>
+        // Set up the custom font
+        tailwind.config = {
+            darkMode: 'class', // Enable dark mode based on the 'dark' class on <html>
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+
+        /**
+         * The core resource calculation function provided by the user.
+         * Simulates resource conversion and fusion to maximize Fusion Material.
+         */
+        function calculateFusion(timber, loggingPowder, tenderTimber, sturdyTimber, abidosTimber) {
+            let fusionMaterial = 0;
+
+            // Save starting values
+            const start_abidos = abidosTimber;
+            const start_tender = tenderTimber;
+            const start_timber = timber;
+            const start_sturdy = sturdyTimber;
+            const start_powder = loggingPowder;
+
+            let sturdy_to_timber = 0, sturdy_to_timber_times = 0;
+            let timber_to_powder = 0, timber_to_powder_times = 0;
+            let tender_to_powder = 0, tender_to_powder_times = 0;
+            let powder_to_timber = 0, powder_to_timber_times = 0;
+            let powder_to_tender = 0, powder_to_tender_times = 0;
+            let powder_to_abidos = 0, powder_to_abidos_times = 0;
+
+            let cycles = 0;
+            let total_powder_generated = 0;
+            let total_powder_available = start_powder;
+
+            function fusionPossible(a, te, ti) {
+                return a >= 33 && te >= 45 && ti >= 86;
+            }
+
+            function missingForFusion(a, te, ti) {
+                let need = [];
+                if (a < 33) need.push("abidos");
+                if (te < 45) need.push("tender");
+                if (ti < 86) need.push("timber");
+                return need;
+            }
+
+            // Step 1: Convert Sturdy → Timber first
+            while (sturdyTimber >= 5) {
+                sturdyTimber -= 5;
+                timber += 50;
+                sturdy_to_timber += 50;
+                sturdy_to_timber_times++;
+            }
+
+            // Step 2: Main loop
+            let changed = true;
+            while (changed) {
+                changed = false;
+                cycles++;
+
+                // Try to fuse as much as possible
+                while (fusionPossible(abidosTimber, tenderTimber, timber)) {
+                    abidosTimber -= 33;
+                    tenderTimber -= 45;
+                    timber -= 86;
+                    fusionMaterial += 10;
+                    changed = true;
+                }
+
+                let shortage = missingForFusion(abidosTimber, tenderTimber, timber);
+                if (shortage.length === 0) break;
+
+                // If enough powder → fix shortage
+                if (loggingPowder >= 100) {
+                    if (shortage.includes("abidos")) {
+                        loggingPowder -= 100;
+                        abidosTimber += 10;
+                        powder_to_abidos += 100;
+                        powder_to_abidos_times++;
+                        changed = true;
+                        continue;
+                    }
+                    if (shortage.includes("tender")) {
+                        loggingPowder -= 100;
+                        tenderTimber += 50;
+                        powder_to_tender += 100;
+                        powder_to_tender_times++;
+                        changed = true;
+                        continue;
+                    }
+                    if (shortage.includes("timber")) {
+                        loggingPowder -= 100;
+                        timber += 50;
+                        powder_to_timber += 100;
+                        powder_to_timber_times++;
+                        changed = true;
+                        continue;
+                    }
+                }
+
+                // Otherwise: convert resources → powder
+                if (tenderTimber >= 50 || timber >= 100) {
+                    if (timber >= tenderTimber && timber >= 100) {
+                        timber -= 100;
+                        loggingPowder += 80;
+                        total_powder_generated += 80;
+                        total_powder_available += 80;
+                        timber_to_powder += 100;
+                        timber_to_powder_times++;
+                        changed = true;
+                        continue;
+                    } else if (tenderTimber >= 50) {
+                        tenderTimber -= 50;
+                        loggingPowder += 80;
+                        total_powder_generated += 80;
+                        total_powder_available += 80;
+                        tender_to_powder += 50;
+                        tender_to_powder_times++;
+                        changed = true;
+                        continue;
+                    }
+                }
+            }
+
+            // Final Result Object
+            return {
+                cycles,
+                stock_before: {
+                    Abidos: start_abidos,
+                    Tender: start_tender,
+                    Timber: start_timber,
+                    Sturdy: start_sturdy,
+                    Powder: start_powder
+                },
+                sturdy_to_timber: { times: sturdy_to_timber_times, timber: sturdy_to_timber },
+                timber_to_powder: { times: timber_to_powder_times, powder: timber_to_powder_times * 80 },
+                tender_to_powder: { times: tender_to_powder_times, powder: tender_to_powder_times * 80 },
+                total_powder_available,
+                powder_to_timber: { times: powder_to_timber_times, timber: powder_to_timber / 2 },
+                powder_to_tender: { times: powder_to_tender_times, tender: powder_to_tender / 2 },
+                powder_to_abidos: { times: powder_to_abidos_times, abidos: powder_to_abidos / 10 },
+                fusion_material: fusionMaterial,
+                stacks: Math.floor(fusionMaterial / 10),
+                stock_after: {
+                    Timber: timber,
+                    Powder: loggingPowder,
+                    Tender: tenderTimber,
+                    Sturdy: sturdyTimber,
+                    Abidos: abidosTimber
+                }
+            };
+        }
+
+        /**
+         * Main function to read inputs, execute calculation, and update UI.
+         */
+        function performCalculation() {
+            // 1. Get input values (ensuring they are integers)
+            const timber = parseInt(document.getElementById('input-timber').value) || 0;
+            const loggingPowder = parseInt(document.getElementById('input-powder').value) || 0;
+            const tenderTimber = parseInt(document.getElementById('input-tender').value) || 0;
+            const sturdyTimber = parseInt(document.getElementById('input-sturdy').value) || 0;
+            const abidosTimber = parseInt(document.getElementById('input-abidos').value) || 0;
+
+            // 2. Call the complex logic function
+            const result = calculateFusion(timber, loggingPowder, tenderTimber, sturdyTimber, abidosTimber);
+
+            // 3. Update the UI with main results
+            document.getElementById('result-fusion').textContent = result.fusion_material.toLocaleString();
+            document.getElementById('result-stacks').textContent = result.stacks.toLocaleString();
+
+            // 4. Update the UI with Conversion Statistics
+            document.getElementById('stat-sturdy').textContent = 
+                `${result.sturdy_to_timber.times.toLocaleString()}x (${result.sturdy_to_timber.timber.toLocaleString()} Timber)`;
+            document.getElementById('stat-timber-powder').textContent = 
+                `${result.timber_to_powder.times.toLocaleString()}x (${result.timber_to_powder.powder.toLocaleString()} Powder)`;
+            document.getElementById('stat-tender-powder').textContent = 
+                `${result.tender_to_powder.times.toLocaleString()}x (${result.tender_to_powder.powder.toLocaleString()} Powder)`;
+            document.getElementById('stat-powder-abidos').textContent = 
+                `${result.powder_to_abidos.times.toLocaleString()}x (${result.powder_to_abidos.abidos.toLocaleString()} Abidos)`;
+            document.getElementById('stat-powder-tender').textContent = 
+                `${result.powder_to_tender.times.toLocaleString()}x (${result.powder_to_tender.tender.toLocaleString()} Tender)`;
+            document.getElementById('stat-powder-timber').textContent = 
+                `${result.powder_to_timber.times.toLocaleString()}x (${result.powder_to_timber.timber.toLocaleString()} Timber)`;
+            
+            // NOTE: The updates for Stock Remaining were removed from the UI (as requested by user) 
+            // but the calculation logic remains in the function above.
+        }
+        
+        // --- Theme Logic (Simplified to automatically apply theme) ---
+
+        function initTheme() {
+            // Force dark mode regardless of system preference or stored setting
+            document.documentElement.classList.add('dark');
+        }
+
+        
+        // Initialize theme and perform calculation on load
+        window.onload = function() {
+            initTheme();
+            performCalculation();
+        };
+
+    </script>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col items-center p-6">
+<body class="min-h-screen flex items-center justify-center p-4 transition duration-300">
 
-  <header class="w-full text-center mb-6">
-    <h1 class="text-3xl font-bold text-white select-none">Abidos Fusion Calculator</h1>
-    <p class="text-gray-400 select-none">by Excoupe</p>
-  </header>
+    <!-- Application Container -->
+    <div class="bg-white dark:bg-gray-800 card-shadow w-full md:max-w-6xl rounded-3xl p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 transition duration-300">
+        
+        <!-- Input Section (Left Side) - Outer container for flex layout -->
+        <div class="flex flex-col h-full">
+            
+            <!-- Wrapper for all content that needs internal spacing (Title, Prompts, Inputs) -->
+            <div class="space-y-6">
+                <!-- Title -->
+                <h1 class="text-32 font-extrabold text-sky-900 dark:text-sky-200 mb-0 pt-1">Power of Abidos</h1>
+                
+                <!-- Credit (mb-4 for spacing after line, -mt-7 to pull up to title) -->
+                <p class="text-sm text-sky-600 dark:text-sky-400 -mt-7 mb-4 border-b pb-1 border-sky-100 dark:border-gray-700 font-bold" style="font-family: 'Courier New', Courier, monospace;">by Excoupe</p>
 
-  <div class="mb-6">
-    <select id="profession" class="px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-gray-100 shadow-sm glow-input">
-      <option value="Logging" selected>Logging</option>
-      <option value="Mining">Mining</option>
-      <option value="Foraging">Foraging</option>
-      <option value="Hunting">Hunting</option>
-      <option value="Fishing">Fishing</option>
-      <option value="Excavating">Excavating</option>
-    </select>
-  </div>
+                <!-- Input Prompt Text -->
+                <p class="text-sm font-semibold text-sky-700 dark:text-sky-400 block mb-2">Enter the amount of materials you have:</p>
+                
+                <!-- Input Fields Grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Timber Input -->
+                    <div class="form-group">
+                        <label for="input-timber" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Timber</label>
+                        <input type="number" id="input-timber" value="150" min="0" 
+                               oninput="performCalculation()"
+                               placeholder="86 for 1 Fusion"
+                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right 
+                                      focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 dark:focus:border-sky-400 dark:focus:ring-sky-400 transition duration-150">
+                    </div>
 
-  <div class="w-full max-w-5xl flex flex-col lg:flex-row lg:space-x-6 space-y-6 lg:space-y-0">
-    
-    <div class="bg-gray-800 shadow-lg rounded-lg p-6 w-full lg:w-1/2">
-      <h2 class="text-xl font-semibold text-white mb-4">Input your materials</h2>
-      <form id="fusionForm" class="space-y-4">
-        <div>
-          <label class="block text-gray-300" id="label1">Timber</label>
-          <input type="text" id="input1" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
-        </div>
-        <div>
-          <label class="block text-gray-300" id="label2">Logging Powder</label>
-          <input type="text" id="input2" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
-        </div>
-        <div>
-          <label class="block text-gray-300" id="label3">Tender Timber</label>
-          <input type="text" id="input3" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
-        </div>
-        <div id="sturdyWrapper">
-          <label class="block text-gray-300" id="label4">Sturdy Timber</label>
-          <input type="text" id="input4" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
-        </div>
-        <div>
-          <label class="block text-gray-300" id="label5">Abidos Timber</label>
-          <input type="text" id="input5" class="w-full px-3 py-2 border border-gray-700 bg-gray-900 text-gray-100 rounded-lg glow-input only-digits" min="0" value="" pattern="\d*">
+                    <!-- Logging Powder Input -->
+                    <div class="form-group">
+                        <label for="input-powder" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Logging Powder</label>
+                        <input type="number" id="input-powder" value="50" min="0"
+                               oninput="performCalculation()"
+                               placeholder="100 to convert"
+                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right 
+                                      focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 dark:focus:border-sky-400 dark:focus:ring-sky-400 transition duration-150">
+                    </div>
+                
+                    <!-- Tender Timber Input -->
+                    <div class="form-group">
+                        <label for="input-tender" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Tender Timber</label>
+                        <input type="number" id="input-tender" value="50" min="0" 
+                               oninput="performCalculation()"
+                               placeholder="45 for 1 Fusion"
+                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right 
+                                      focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 dark:focus:border-sky-400 dark:focus:ring-sky-400 transition duration-150">
+                    </div>
+
+                    <!-- Sturdy Timber Input -->
+                    <div class="form-group">
+                        <label for="input-sturdy" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Sturdy Timber</label>
+                        <input type="number" id="input-sturdy" value="5" min="0" 
+                               oninput="performCalculation()"
+                               placeholder="5 converts to 50 Timber"
+                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right 
+                                      focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 dark:focus:border-sky-400 dark:focus:ring-sky-400 transition duration-150">
+                    </div>
+                    
+                    <!-- Abidos Timber Input -->
+                    <div class="form-group col-span-2">
+                        <label for="input-abidos" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Abidos Timber</label>
+                        <input type="number" id="input-abidos" value="35" min="0" 
+                               oninput="performCalculation()"
+                               placeholder="33 for 1 Fusion"
+                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right 
+                                      focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 dark:focus:border-sky-400 dark:focus:ring-sky-400 transition duration-150">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- RESET BUTTON - mt-auto pushes it to the bottom of the flex container, aligning it with the end of the right panel -->
+            <button onclick="document.getElementById('input-timber').value='0'; document.getElementById('input-powder').value='0'; document.getElementById('input-tender').value='0'; document.getElementById('input-sturdy').value='0'; document.getElementById('input-abidos').value='0'; performCalculation();"
+                    class="mt-auto w-full py-3 bg-rose-500 dark:bg-rose-700 text-white dark:text-rose-200 font-bold text-lg rounded-xl shadow-lg hover:bg-rose-600 dark:hover:bg-rose-600 transition duration-200 ease-in-out transform hover:scale-[1.01] active:scale-[0.98]">
+                Reset Calculation
+            </button>
         </div>
 
-        <button type="button" id="calculateBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg glow-btn">
-            Calculate
-        </button>
+        <!-- Output Section (Right Side) -->
+        <div class="bg-sky-500 dark:bg-sky-900 p-8 rounded-2xl flex flex-col justify-between transition duration-300">
+            <div class="space-y-8">
 
-      </form>
+                <!-- Fusion Material Result -->
+                <div class="flex flex-col items-center text-center pb-4 border-b border-sky-600 dark:border-sky-800">
+                    <p class="text-sky-100 dark:text-sky-400 text-lg font-semibold">Craftable Abidos Fusion Material</p>
+                    <div class="text-5xl font-extrabold text-white dark:text-sky-200" id="result-fusion">
+                        0
+                    </div>
+                    <p class="text-sky-100 dark:text-sky-500 text-sm font-medium">
+                        (<span id="result-stacks" class="font-bold">0</span> stacks)
+                    </p>
+                </div>
+                
+                <!-- Conversion Instruction (moved and styled) -->
+                <p class="text-white dark:text-white text-center text-sm">
+                    To maximize <span class="font-bold">Abidos Fusion Material</span> crafting, you should follow the conversions below in that specific order.
+                </p>
+
+                <!-- Conversion Details List -->
+                <div class="text-sm pt-0">
+                    <div class="space-y-2 text-sky-100 dark:text-sky-400">
+                        
+                        <p class="text-white font-bold pt-2">Resource to Powder Conversions:</p>
+                        <ul class="list-disc list-inside ml-2 space-y-1">
+                            <li>Sturdy → Timber: <span id="stat-sturdy" class="font-bold text-white dark:text-sky-200">0x</span></li>
+                            <li>Timber → Powder: <span id="stat-timber-powder" class="font-bold text-white dark:text-sky-200">0x</span></li>
+                            <li>Tender → Powder: <span id="stat-tender-powder" class="font-bold text-white dark:text-sky-200">0x</span></li>
+                        </ul>
+                        
+                        <p class="text-white font-bold pt-2">Powder to Resource Conversions:</p>
+                        <ul class="list-disc list-inside ml-2 space-y-1">
+                            <!-- Powder to Timber (First Line) -->
+                            <li>Powder → Timber: <span id="stat-powder-timber" class="font-bold text-white dark:text-sky-200">0x</span></li>
+                            <!-- Powder to Tender (Second Line) -->
+                            <li>Powder → Tender: <span id="stat-powder-tender" class="font-bold text-white dark:text-sky-200">0x</span></li>
+                            <!-- Powder to Abidos (Third Line) -->
+                            <li>Powder → Abidos: <span id="stat-powder-abidos" class="font-bold text-white dark:text-sky-200">0x</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- The reset button previously here has been moved to the left column. -->
+        </div>
+
     </div>
 
-    <div id="resultsCard" class="shadow-lg rounded-lg p-6 w-full lg:w-1/2 results-placeholder">
-      <h2 class="text-xl font-semibold text-white mb-4">Results</h2>
-      <p id="initial-results-message" class="text-gray-500 text-center py-10">
-        Enter your materials and click Calculate to see the fusion results.
-      </p>
-      <pre id="results" class="text-gray-300 whitespace-pre-wrap hidden relative font-mono"></pre>
-    </div>
-
-  </div>
-  
-  <script>
-    // **STRICT KEYPRESS VALIDATION**
-    document.querySelectorAll('.only-digits').forEach(input => {
-        
-        input.addEventListener('keypress', function(e) {
-            if (e.key >= '0' && e.key <= '9') {
-                return true; 
-            }
-            if (e.keyCode === 8 || e.keyCode === 9 || e.keyCode === 13 || e.keyCode === 37 || e.keyCode === 39) {
-                return true;
-            }
-            e.preventDefault();
-        });
-
-        // Cleanup after paste/autofill (Final safeguard)
-        input.addEventListener('input', function() {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
-    });
-
-    // Profession word mappings
-    const mappings = {
-      Foraging: { timber: "Wild Flower", powder: "Gathering Powder", tender: "Shy Wild Flower", sturdy: null, abidos: "Abidos Wild Flower" },
-      Logging: { timber: "Timber", powder: "Logging Powder", tender: "Tender Timber", sturdy: "Sturdy Timber", abidos: "Abidos Timber" },
-      Mining: { timber: "Iron Ore", powder: "Mining Powder", tender: "Heavy Iron Ore", sturdy: "Strong Iron Ore", abidos: "Abidos Iron Ore" },
-      Hunting: { timber: "Thick Raw Meat", powder: "Hunting Powder", tender: "Treated Meat", sturdy: null, abidos: "Abidos Thick Raw Meat" },
-      Fishing: { timber: "Fish", powder: "Fishing Powder", tender: "Redflesh Fish", sturdy: null, abidos: "Abidos Solar Carp" },
-      Excavating: { timber: "Ancient Relic", powder: "Excavating Powder", tender: "Rare Relic", sturdy: null, abidos: "Abidos Relic" }
-    };
-
-    const professionSelect = document.getElementById("profession");
-    const sturdyWrapper = document.getElementById("sturdyWrapper");
-    const resultsCard = document.getElementById("resultsCard");
-    const resultsPre = document.getElementById("results");
-    const initialMessage = document.getElementById("initial-results-message");
-
-    const labels = {
-      1: document.getElementById("label1"),
-      2: document.getElementById("label2"),
-      3: document.getElementById("label3"),
-      4: document.getElementById("label4"),
-      5: document.getElementById("label5")
-    };
-
-    function updateLabels() {
-      const prof = professionSelect.value;
-      const map = mappings[prof];
-      labels[1].innerText = map.timber;
-      labels[2].innerText = map.powder;
-      labels[3].innerText = map.tender;
-      labels[5].innerText = map.abidos;
-      if (map.sturdy) {
-        sturdyWrapper.classList.remove("hidden");
-        labels[4].innerText = map.sturdy;
-      } else {
-        sturdyWrapper.classList.add("hidden");
-      }
-    }
-
-    updateLabels();
-    professionSelect.addEventListener("change", updateLabels);
-
-    // Fusion logic
-    document.getElementById("calculateBtn").addEventListener("click", () => {
-      const prof = professionSelect.value;
-      const map = mappings[prof];
-
-      // Get values, parse as integer, default to 0 if empty
-      let timber = parseInt(document.getElementById("input1").value) || 0;
-      let powder_count = parseInt(document.getElementById("input2").value) || 0; 
-      let tender_timber = parseInt(document.getElementById("input3").value) || 0;
-      let sturdy_timber = map.sturdy ? (parseInt(document.getElementById("input4").value) || 0) : 0; 
-      let abidos_timber = parseInt(document.getElementById("input5").value) || 0; 
-
-      let fusion_material = 0;
-
-      let sturdy_to_timber_times = 0;
-      let timber_to_powder_times = 0;
-      let tender_to_powder_times = 0;
-      let powder_to_timber_times = 0;
-      let powder_to_tender_times = 0;
-      let powder_to_abidos_times = 0;
-
-      let cycles = 0;
-      
-      // Conversion constants
-      const POWDER_PER_RAW_MATERIAL = 80;
-      
-      // RAW MATERIAL TO POWDER RATES
-      const TENDER_TO_POWDER_COST = 50;  // 50 Tender -> 80 Powder
-      const TIMBER_TO_POWDER_COST = 100; // 100 Timber -> 80 Powder
-      
-      // FUSION RATES
-      const FUSION_TIMBER_COST = 86;
-      const FUSION_TENDER_COST = 45;
-      const FUSION_ABIDOS_COST = 33;
-      const FUSION_MATERIAL_YIELD = 10;
-      
-      // POWDER TO MATERIAL RATES
-      const POWDER_TO_ABIDOS_COST = 100;
-      const ABIDOS_PER_POWDER_CONVERSION = 10;
-      const POWDER_TO_TENDER_COST = 100;
-      const TENDER_PER_POWDER_CONVERSION = 50;
-      const POWDER_TO_TIMBER_COST = 100;
-      const TIMBER_PER_POWDER_CONVERSION = 50;
-
-
-      function fusion_possible(a, te, ti) { return a >= FUSION_ABIDOS_COST && te >= FUSION_TENDER_COST && ti >= FUSION_TIMBER_COST; }
-      function missing_for_fusion(a, te, ti) {
-        let need = [];
-        if (a < FUSION_ABIDOS_COST) need.push("abidos");
-        if (te < FUSION_TENDER_COST) need.push("tender");
-        if (ti < FUSION_TIMBER_COST) need.push("timber");
-        return need;
-      }
-
-      // 1. Sturdy to Timber Conversion (Always done first)
-      while (sturdy_timber >= 5) {
-        sturdy_timber -= 5;
-        timber += 50;
-        sturdy_to_timber_times += 1;
-      }
-
-      let changed = true;
-      while (changed) {
-        changed = false;
-        cycles += 1;
-        
-        // 2. Fusion (Highest priority)
-        while (fusion_possible(abidos_timber, tender_timber, timber)) {
-          abidos_timber -= FUSION_ABIDOS_COST;
-          tender_timber -= FUSION_TENDER_COST;
-          timber -= FUSION_TIMBER_COST;
-          fusion_material += FUSION_MATERIAL_YIELD;
-          changed = true;
-        }
-        
-        let shortage = missing_for_fusion(abidos_timber, tender_timber, timber);
-        if (!shortage.length) break; 
-
-        // 3. Powder Conversion -> Missing Material (Spend Powder to enable fusion)
-        if (powder_count >= POWDER_TO_ABIDOS_COST) { 
-          // Prioritize Abidos conversion
-          if (shortage.includes("abidos")) { powder_count -= POWDER_TO_ABIDOS_COST; abidos_timber += ABIDOS_PER_POWDER_CONVERSION; powder_to_abidos_times += 1; changed = true; continue; }
-          // Then Tender Timber
-          if (shortage.includes("tender")) { powder_count -= POWDER_TO_TENDER_COST; tender_timber += TENDER_PER_POWDER_CONVERSION; powder_to_tender_times += 1; changed = true; continue; }
-          // Then Timber
-          if (shortage.includes("timber")) { powder_count -= POWDER_TO_TIMBER_COST; timber += TIMBER_PER_POWDER_CONVERSION; powder_to_timber_times += 1; changed = true; continue; }
-        }
-        
-        // 4. Raw Material Conversion -> Powder (ONLY if needed to replenish powder stock, prioritizing Timber)
-        if (tender_timber >= TENDER_TO_POWDER_COST || timber >= TIMBER_TO_POWDER_COST) {
-          // 4a. Prioritize converting Timber (100 cost)
-          if (timber >= TIMBER_TO_POWDER_COST) {
-            timber -= TIMBER_TO_POWDER_COST; powder_count += POWDER_PER_RAW_MATERIAL; timber_to_powder_times += 1; changed = true; continue;
-          } 
-          // 4b. Fallback to converting Tender Timber (50 cost)
-          else if (tender_timber >= TENDER_TO_POWDER_COST) {
-            tender_timber -= TENDER_TO_POWDER_COST; powder_count += POWDER_PER_RAW_MATERIAL; tender_to_powder_times += 1; changed = true; continue;
-          }
-        }
-        
-        // If we reach here, we are fully stuck. Stop the loop.
-        break; 
-      }
-
-      // BEGIN OUTPUT CONSTRUCTION
-      const colorize = (text) => `<span class="text-green-400">${text}</span>`;
-      const bold = (text) => `<strong>${text}</strong>`;
-      let output = "";
-
-      // Fusion Result
-      output += `After conversion, you can craft:\n`;
-      output += `${bold(colorize(fusion_material + "x Abidos Fusion Material"))}\n\n`;
-      
-      // CONVERSION BREAKDOWN
-      output += `${bold("Material Conversions:")}\n`;
-      if (sturdy_to_timber_times > 0 && map.sturdy) {
-        output += `Use ${sturdy_to_timber_times * 5} ${map.sturdy} to get ${bold(colorize(sturdy_to_timber_times * 50 + " " + map.timber))}\n`;
-      }
-      if (timber_to_powder_times > 0) {
-        output += `Use ${timber_to_powder_times * TIMBER_TO_POWDER_COST} ${map.timber} to get ${bold(colorize(timber_to_powder_times * POWDER_PER_RAW_MATERIAL + " " + map.powder))}\n`;
-      }
-      if (tender_to_powder_times > 0) {
-        output += `Use ${tender_to_powder_times * TENDER_TO_POWDER_COST} ${map.tender} to get ${bold(colorize(tender_to_powder_times * POWDER_PER_RAW_MATERIAL + " " + map.powder))}\n`;
-      }
-      
-      output += `\n${bold("Powder Conversions:")}\n`;
-      if (powder_to_abidos_times > 0) {
-        output += `Use ${powder_to_abidos_times * POWDER_TO_ABIDOS_COST} ${map.powder} to get ${bold(colorize(powder_to_abidos_times * ABIDOS_PER_POWDER_CONVERSION + " " + map.abidos))}\n`;
-      }
-      if (powder_to_tender_times > 0) {
-        output += `Use ${powder_to_tender_times * POWDER_TO_TENDER_COST} ${map.powder} to get ${bold(colorize(powder_to_tender_times * TENDER_PER_POWDER_CONVERSION + " " + map.tender))}\n`;
-      }
-      if (powder_to_timber_times > 0) {
-        output += `Use ${powder_to_timber_times * POWDER_TO_TIMBER_COST} ${map.powder} to get ${bold(colorize(powder_to_timber_times * TIMBER_PER_POWDER_CONVERSION + " " + map.timber))}\n`;
-      }
-      // END OUTPUT CONSTRUCTION
-
-      // Set results and activate card
-      resultsPre.innerHTML = output; 
-      resultsPre.classList.remove("hidden");
-      initialMessage.classList.add("hidden");
-      resultsCard.classList.remove("results-placeholder");
-      resultsCard.classList.add("results-active");
-    });
-  </script>
 </body>
 </html>
