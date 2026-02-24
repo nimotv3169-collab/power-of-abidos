@@ -3,181 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fusion Resource Calculator - Updated</title>
+    <title>Power of Abidos - Polished Build</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom styles for the app container */
-        .card-shadow {
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
-        /* Custom size for the main title */
-        .text-32 {
-            font-size: 32px;
-        }
-        /* Custom font and Global Text Selection Disable */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        
+        .card-shadow { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); }
+        
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0fdfa;
-            transition: background-color 0.3s;
-            -webkit-user-select: none; 
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
+            background-color: #1e293b; /* Softer Slate Background */
+            color: #f8fafc;
+            -webkit-user-select: none; user-select: none;
         }
-        /* Dark mode body background */
-        .dark body {
-            background-color: #111827;
+        input { user-select: auto !important; }
+        
+        /* Resource Color Palette */
+        .txt-white { color: #ffffff !important; }
+        .txt-orange { color: #fb923c !important; } /* Powder */
+        .txt-green { color: #4ade80 !important; }  /* Tender */
+        .txt-blue { color: #60a5fa !important; }   /* Sturdy */
+        
+        /* Subtle Abidos Glow */
+        .txt-abidos { 
+            color: #38bdf8 !important; 
+            text-shadow: 0 0 5px rgba(14, 165, 233, 0.4);
+            font-weight: 700;
         }
-        /* Hide number input arrows */
+
+        /* Improved Grid Alignment */
+        .result-row {
+            display: grid;
+            grid-template-columns: 160px 1fr; /* Slightly wider for full names */
+            gap: 1rem;
+            align-items: center;
+            padding: 4px 0;
+        }
+
         input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
-        /* Allow selection for input fields only */
-        input {
-            -webkit-user-select: auto !important;
-            -moz-user-select: auto !important;
-            -ms-user-select: auto !important;
-            user-select: auto !important;
-        }
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                }
-            }
-        }
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
 
-        /**
-         * Updated Resource calculation function
-         * NEW RECIPE: 43 Abidos, 59 Tender, 112 Timber
-         */
         function calculateFusion(timber, loggingPowder, tenderTimber, sturdyTimber, abidosTimber) {
             let fusionMaterial = 0;
+            let sturdy_to_timber_times = 0, timber_to_powder_times = 0, tender_to_powder_times = 0;
+            let powder_to_tender_times = 0, powder_to_abidos_times = 0;
 
-            const start_abidos = abidosTimber;
-            const start_tender = tenderTimber;
-            const start_timber = timber;
-            const start_sturdy = sturdyTimber;
-            const start_powder = loggingPowder;
-
-            let sturdy_to_timber = 0, sturdy_to_timber_times = 0;
-            let timber_to_powder = 0, timber_to_powder_times = 0;
-            let tender_to_powder = 0, tender_to_powder_times = 0;
-            let powder_to_timber = 0, powder_to_timber_times = 0;
-            let powder_to_tender = 0, powder_to_tender_times = 0;
-            let powder_to_abidos = 0, powder_to_abidos_times = 0;
-
-            let cycles = 0;
-            let total_powder_available = start_powder;
-
-            // UPDATED REQUIREMENTS
-            function fusionPossible(a, te, ti) {
-                return a >= 43 && te >= 59 && ti >= 112;
-            }
-
-            function missingForFusion(a, te, ti) {
-                let need = [];
-                if (a < 43) need.push("abidos");
-                if (te < 59) need.push("tender");
-                if (ti < 112) need.push("timber");
-                return need;
-            }
-
-            // Step 1: Sturdy → Timber
+            // Step 0: Sturdy Conversion
             while (sturdyTimber >= 5) {
                 sturdyTimber -= 5;
                 timber += 50;
-                sturdy_to_timber += 50;
                 sturdy_to_timber_times++;
             }
 
-            // Step 2: Main loop
             let changed = true;
             while (changed) {
                 changed = false;
-                cycles++;
-
-                // Try to fuse (UPDATED SUBTRACTION)
-                while (fusionPossible(abidosTimber, tenderTimber, timber)) {
+                if (abidosTimber >= 43 && tenderTimber >= 59 && timber >= 112) {
                     abidosTimber -= 43;
                     tenderTimber -= 59;
                     timber -= 112;
                     fusionMaterial += 10;
                     changed = true;
+                    continue;
                 }
-
-                let shortage = missingForFusion(abidosTimber, tenderTimber, timber);
-                if (shortage.length === 0) break;
-
-                // Fix shortage using Powder
                 if (loggingPowder >= 100) {
-                    if (shortage.includes("abidos")) {
+                    if (abidosTimber < 43) {
                         loggingPowder -= 100;
                         abidosTimber += 10;
-                        powder_to_abidos += 100;
                         powder_to_abidos_times++;
                         changed = true;
                         continue;
-                    }
-                    if (shortage.includes("tender")) {
+                    } else if (tenderTimber < 59) {
                         loggingPowder -= 100;
                         tenderTimber += 50;
-                        powder_to_tender += 100;
                         powder_to_tender_times++;
                         changed = true;
                         continue;
                     }
-                    if (shortage.includes("timber")) {
-                        loggingPowder -= 100;
-                        timber += 50;
-                        powder_to_timber += 100;
-                        powder_to_timber_times++;
-                        changed = true;
-                        continue;
-                    }
                 }
-
-                // Generate Powder
-                if (tenderTimber >= 50 || timber >= 100) {
-                    if (timber >= tenderTimber && timber >= 100) {
+                if (abidosTimber < 43 || tenderTimber < 59) {
+                    if (timber >= 212) {
                         timber -= 100;
                         loggingPowder += 80;
-                        total_powder_available += 80;
-                        timber_to_powder += 100;
                         timber_to_powder_times++;
                         changed = true;
-                        continue;
-                    } else if (tenderTimber >= 50) {
+                    } else if (tenderTimber >= 109) {
                         tenderTimber -= 50;
                         loggingPowder += 80;
-                        total_powder_available += 80;
-                        tender_to_powder += 50;
                         tender_to_powder_times++;
                         changed = true;
-                        continue;
                     }
                 }
             }
 
             return {
-                cycles,
-                sturdy_to_timber: { times: sturdy_to_timber_times, timber: sturdy_to_timber },
-                timber_to_powder: { times: timber_to_powder_times, powder: timber_to_powder_times * 80 },
-                tender_to_powder: { times: tender_to_powder_times, powder: tender_to_powder_times * 80 },
-                total_powder_available,
-                powder_to_timber: { times: powder_to_timber_times, timber: powder_to_timber / 2 },
-                powder_to_tender: { times: powder_to_tender_times, tender: powder_to_tender / 2 },
-                powder_to_abidos: { times: powder_to_abidos_times, abidos: powder_to_abidos / 10 },
+                sturdy_to_timber: { times: sturdy_to_timber_times, total: sturdy_to_timber_times * 50 },
+                timber_to_powder: { times: timber_to_powder_times, total: timber_to_powder_times * 80 },
+                tender_to_powder: { times: tender_to_powder_times, total: tender_to_powder_times * 80 },
+                powder_to_tender: { times: powder_to_tender_times, total: powder_to_tender_times * 50 },
+                powder_to_abidos: { times: powder_to_abidos_times, total: powder_to_abidos_times * 10 },
                 fusion_material: fusionMaterial,
                 stacks: Math.floor(fusionMaterial / 10)
             };
@@ -190,102 +117,107 @@
             const sturdyTimber = parseInt(document.getElementById('input-sturdy').value) || 0;
             const abidosTimber = parseInt(document.getElementById('input-abidos').value) || 0;
 
-            const result = calculateFusion(timber, loggingPowder, tenderTimber, sturdyTimber, abidosTimber);
+            const res = calculateFusion(timber, loggingPowder, tenderTimber, sturdyTimber, abidosTimber);
 
-            document.getElementById('result-fusion').textContent = result.fusion_material.toLocaleString();
-            document.getElementById('result-stacks').textContent = result.stacks.toLocaleString();
-            document.getElementById('stat-sturdy').textContent = `${result.sturdy_to_timber.times.toLocaleString()}x (${result.sturdy_to_timber.timber.toLocaleString()} Timber)`;
-            document.getElementById('stat-timber-powder').textContent = `${result.timber_to_powder.times.toLocaleString()}x (${result.timber_to_powder.powder.toLocaleString()} Powder)`;
-            document.getElementById('stat-tender-powder').textContent = `${result.tender_to_powder.times.toLocaleString()}x (${result.tender_to_powder.powder.toLocaleString()} Powder)`;
-            document.getElementById('stat-powder-abidos').textContent = `${result.powder_to_abidos.times.toLocaleString()}x (${result.powder_to_abidos.abidos.toLocaleString()} Abidos)`;
-            document.getElementById('stat-powder-tender').textContent = `${result.powder_to_tender.times.toLocaleString()}x (${result.powder_to_tender.tender.toLocaleString()} Tender)`;
-            document.getElementById('stat-powder-timber').textContent = `${result.powder_to_timber.times.toLocaleString()}x (${result.powder_to_timber.timber.toLocaleString()} Timber)`;
+            document.getElementById('result-fusion').textContent = res.fusion_material.toLocaleString();
+            document.getElementById('result-stacks').textContent = res.stacks.toLocaleString();
+            
+            document.getElementById('stat-sturdy').innerHTML = 
+                `<span class="txt-white">${res.sturdy_to_timber.times}x</span> (+<span class="txt-white">${res.sturdy_to_timber.total}</span> <span class="txt-white">Timber</span>)`;
+            
+            document.getElementById('stat-timber-powder').innerHTML = 
+                `<span class="txt-white">${res.timber_to_powder.times}x</span> (+<span class="txt-white">${res.timber_to_powder.total}</span> <span class="txt-orange">Powder</span>)`;
+            
+            document.getElementById('stat-tender-powder').innerHTML = 
+                `<span class="txt-white">${res.tender_to_powder.times}x</span> (+<span class="txt-white">${res.tender_to_powder.total}</span> <span class="txt-orange">Powder</span>)`;
+            
+            document.getElementById('stat-powder-tender').innerHTML = 
+                `<span class="txt-white">${res.powder_to_tender.times}x</span> (+<span class="txt-white">${res.powder_to_tender.total}</span> <span class="txt-green">Tender</span>)`;
+            
+            document.getElementById('stat-powder-abidos').innerHTML = 
+                `<span class="txt-white">${res.powder_to_abidos.times}x</span> (+<span class="txt-white">${res.powder_to_abidos.total}</span> <span class="txt-abidos">Abidos</span>)`;
         }
 
-        function initTheme() {
-            document.documentElement.classList.add('dark');
-        }
-
-        window.onload = function() {
-            initTheme();
-            performCalculation();
-        };
+        window.onload = performCalculation;
     </script>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 transition duration-300">
-
-    <div class="bg-white dark:bg-gray-800 card-shadow w-full md:max-w-6xl rounded-3xl p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 transition duration-300">
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-slate-800 card-shadow w-full md:max-w-5xl rounded-3xl p-6 lg:p-10 grid grid-cols-1 lg:grid-cols-2 gap-8 border border-slate-700">
         
-        <div class="flex flex-col h-full">
-            <div class="space-y-6">
-                <h1 class="text-32 font-extrabold text-sky-900 dark:text-sky-200 mb-0 pt-1">Power of Abidos</h1>
-                <p class="text-sm text-sky-600 dark:text-sky-400 -mt-7 mb-4 border-b pb-1 border-sky-100 dark:border-gray-700 font-bold" style="font-family: 'Courier New', Courier, monospace;">by Excoupe</p>
-                <p class="text-sm font-semibold text-sky-700 dark:text-sky-400 block mb-2">Enter materials:</p>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label for="input-timber" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Timber</label>
-                        <input type="number" id="input-timber" value="150" min="0" oninput="performCalculation()" placeholder="112 for 1 Fusion"
-                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 transition duration-150">
-                    </div>
-                    <div class="form-group">
-                        <label for="input-powder" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Logging Powder</label>
-                        <input type="number" id="input-powder" value="50" min="0" oninput="performCalculation()" placeholder="100 to convert"
-                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 transition duration-150">
-                    </div>
-                    <div class="form-group">
-                        <label for="input-tender" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Tender Timber</label>
-                        <input type="number" id="input-tender" value="50" min="0" oninput="performCalculation()" placeholder="59 for 1 Fusion"
-                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 transition duration-150">
-                    </div>
-                    <div class="form-group">
-                        <label for="input-sturdy" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Sturdy Timber</label>
-                        <input type="number" id="input-sturdy" value="5" min="0" oninput="performCalculation()" placeholder="5 converts to 50 Timber"
-                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 transition duration-150">
-                    </div>
-                    <div class="form-group col-span-2">
-                        <label for="input-abidos" class="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-1">Abidos Timber</label>
-                        <input type="number" id="input-abidos" value="45" min="0" oninput="performCalculation()" placeholder="43 for 1 Fusion"
-                               class="w-full p-3 bg-sky-50 dark:bg-gray-700 border border-sky-200 dark:border-gray-600 rounded-xl text-sky-900 dark:text-white font-bold text-base text-right focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500 transition duration-150">
-                    </div>
-                </div>
+        <div class="flex flex-col h-full space-y-6">
+            <div>
+                <h1 class="text-3xl font-black text-white tracking-tight">Power of Abidos</h1>
+                <p class="text-xs text-sky-400 font-mono uppercase tracking-widest mt-1">Created by Excoupe</p>
             </div>
             
-            <button onclick="document.getElementById('input-timber').value='0'; document.getElementById('input-powder').value='0'; document.getElementById('input-tender').value='0'; document.getElementById('input-sturdy').value='0'; document.getElementById('input-abidos').value='0'; performCalculation();"
-                    class="mt-auto w-full py-3 bg-rose-500 dark:bg-rose-700 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-rose-600 transition duration-200 transform hover:scale-[1.01] active:scale-[0.98]">
-                Reset Calculation
-            </button>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-1">
+                    <label class="text-[10px] font-bold text-white-400 uppercase tracking-wider mb-1 block">Timber</label>
+                    <input type="number" id="input-timber" value="150" oninput="performCalculation()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-right font-bold text-white focus:border-sky-500 outline-none transition-all">
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-bold text-orange-400 uppercase tracking-wider mb-1 block">Logging Powder</label>
+                    <input type="number" id="input-powder" value="50" oninput="performCalculation()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-right font-bold text-white focus:border-orange-500 outline-none transition-all">
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-bold text-green-400 uppercase tracking-wider mb-1 block">Tender Timber</label>
+                    <input type="number" id="input-tender" value="50" oninput="performCalculation()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-right font-bold text-white focus:border-green-500 outline-none transition-all">
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1 block">Sturdy Timber</label>
+                    <input type="number" id="input-sturdy" value="5" oninput="performCalculation()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-right font-bold text-white focus:border-blue-500 outline-none transition-all">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-[10px] font-bold text-sky-400 uppercase tracking-wider mb-1 block">Abidos Timber</label>
+                    <input type="number" id="input-abidos" value="45" oninput="performCalculation()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-right font-bold text-white focus:border-sky-300 outline-none transition-all">
+                </div>
+            </div>
+
+            <button onclick="['input-timber','input-powder','input-tender','input-sturdy','input-abidos'].forEach(id=>document.getElementById(id).value='0'); performCalculation();" class="mt-auto w-full py-4 bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border border-rose-500/20 font-bold rounded-xl transition-all">Clear Resources</button>
         </div>
 
-        <div class="bg-sky-500 dark:bg-sky-900 p-8 rounded-2xl flex flex-col justify-between transition duration-300">
-            <div class="space-y-8">
-                <div class="flex flex-col items-center text-center pb-4 border-b border-sky-600 dark:border-sky-800">
-                    <p class="text-sky-100 dark:text-sky-400 text-lg font-semibold">Craftable Abidos Fusion Material</p>
-                    <div class="text-5xl font-extrabold text-white dark:text-sky-200" id="result-fusion">0</div>
-                    <p class="text-sky-100 dark:text-sky-500 text-sm font-medium">
-                        (<span id="result-stacks" class="font-bold">0</span> stacks)
-                    </p>
-                </div>
-                
-                <p class="text-white dark:text-white text-center text-sm">
-                    To maximize <span class="font-bold">Abidos Fusion Material</span>, follow these specific conversions:
-                </p>
+        <div class="bg-slate-950/50 p-8 rounded-2xl flex flex-col border border-slate-900">
+            <div class="text-center pb-8 border-b border-slate-800">
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-3">Est. Advanced Fusion Materials</p>
+                <div class="text-7xl font-black text-white leading-none" id="result-fusion">0</div>
+                <p class="text-slate-600 text-sm mt-4 font-medium uppercase tracking-tighter"><span id="result-stacks" class="text-slate-300">0</span> Stacks</p>
+            </div>
 
-                <div class="text-sm pt-0">
-                    <div class="space-y-2 text-sky-100 dark:text-sky-400">
-                        <p class="text-white font-bold pt-2">Resource to Powder:</p>
-                        <ul class="list-disc list-inside ml-2 space-y-1">
-                            <li>Sturdy → Timber: <span id="stat-sturdy" class="font-bold text-white dark:text-sky-200">0x</span></li>
-                            <li>Timber → Powder: <span id="stat-timber-powder" class="font-bold text-white dark:text-sky-200">0x</span></li>
-                            <li>Tender → Powder: <span id="stat-tender-powder" class="font-bold text-white dark:text-sky-200">0x</span></li>
-                        </ul>
-                        <p class="text-white font-bold pt-2">Powder to Resource:</p>
-                        <ul class="list-disc list-inside ml-2 space-y-1">
-                            <li>Powder → Timber: <span id="stat-powder-timber" class="font-bold text-white dark:text-sky-200">0x</span></li>
-                            <li>Powder → Tender: <span id="stat-powder-tender" class="font-bold text-white dark:text-sky-200">0x</span></li>
-                            <li>Powder → Abidos: <span id="stat-powder-abidos" class="font-bold text-white dark:text-sky-200">0x</span></li>
-                        </ul>
-                    </div>
+            <div class="mt-8 space-y-8">
+                <div>
+                    <p class="text-slate-600 text-[10px] font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-sky-500 rounded-full"></span> Resource to Powder
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="result-row">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-tight"><span class="txt-blue">Sturdy</span> → <span class="txt-white">Timber</span></span>
+                            <span id="stat-sturdy" class="text-sm font-bold"></span>
+                        </li>
+                        <li class="result-row">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-tight"><span class="txt-white">Timber</span> → <span class="txt-orange">Powder</span></span>
+                            <span id="stat-timber-powder" class="text-sm font-bold"></span>
+                        </li>
+                        <li class="result-row">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-tight"><span class="txt-green">Tender</span> → <span class="txt-orange">Powder</span></span>
+                            <span id="stat-tender-powder" class="text-sm font-bold"></span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <p class="text-slate-600 text-[10px] font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span> Powder to Resource
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="result-row">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-tight"><span class="txt-orange">Powder</span> → <span class="txt-green">Tender</span></span>
+                            <span id="stat-powder-tender" class="text-sm font-bold"></span>
+                        </li>
+                        <li class="result-row">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-tight"><span class="txt-orange">Powder</span> → <span class="txt-abidos">Abidos</span></span>
+                            <span id="stat-powder-abidos" class="text-sm font-bold"></span>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
